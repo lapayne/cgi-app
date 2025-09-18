@@ -21,12 +21,12 @@ steps:
   - script: npm install --save-dev jest-junit
     displayName: "Install Jest JUnit Reporter"
 
-  - script: npm install --save-dev @babel/core @babel/preset-react
+  - script: npm install --save-dev @babel/core @babel/preset-react @babel/preset-env
     displayName: "Install Babel"
 
-  - script: | 
-      echo '{"presets": ["@babel/preset-react"]}' > .babelrc
-    displayName: 'Configure Babel'
+  - script: |
+      echo '{"presets": ["@babel/preset-react", "@babel/preset-env"]}' > .babelrc
+    displayName: "Configure Babel"
 
   - script: npx jest --ci --reporters=default --reporters=jest-junit
     displayName: "Run Tests with JUnit Reporter"
