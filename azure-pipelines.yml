@@ -1,4 +1,3 @@
-# Node.js with React
 trigger:
   - main
 
@@ -11,57 +10,22 @@ steps:
       versionSpec: '20.x'
     displayName: 'Install Node.js'
 
-  # Deterministic installs in CI
   - script: npm ci
     displayName: 'Install dependencies'
 
-  # Ensure jsdom env + reporter are present
+  # Run CRA tests; pass JUnit reporter; jsdom is automatic in CRA
   - script: |
-      npm i -D jest-environment-jsdom jest-junit @testing-library/jest-dom
-    displayName: 'Install test env & reporter'
-
-  # Optional: set up jest-dom matchers globally
-  - script: |
-      echo "import '@testing-library/jest-dom';" > .jest.setup.js
-      cat > jest.config.cjs <<'EOF'
-      /** @type {import('jest').Config} */
-      module.exports = {
-        testEnvironment: 'jsdom',
-        setupFilesAfterEnv: ['<rootDir>/.jest.setup.js'],
-        reporters: [
-          'default',
-          ['jest-junit', {
-            outputDirectory: 'test-results/jest',
-            outputName: 'junit.xml'
-          }]
-        ],
-        moduleFileExtensions: ['js','jsx','json','node']
-      };
-      EOF
-    displayName: 'Configure Jest (env + setup)'
-
-  # If your React tests use JSX and you're NOT using react-scripts,
-  # uncomment the next block to add Babel transform via babel-jest:
-  # - script: |
-  #     npm i -D babel-jest @babel/core @babel/preset-env @babel/preset-react
-  #     cat > .babelrc <<'EOF'
-  #     {
-  #       "presets": [
-  #         ["@babel/preset-env", { "targets": { "node": "current" } }],
-  #         ["@babel/preset-react", { "runtime": "automatic" }]
-  #       ]
-  #     }
-  #     EOF
-  #     node -e "console.log('Babel configured for Jest')"
-  #   displayName: 'Configure Babel for Jest (optional)'
-
-  # Run tests; the config above sets jsdom, so no CLI --env needed
-  - script: npx jest --ci
-    displayName: 'Run Tests with JUnit Reporter'
+      CI=true npm test -- --watchAll=false --ci \
+        --reporters=default --reporters=jest-junit
+    displayName: 'Run tests (CRA + JUnit)'
+    env:
+      # jest-junit output location
+      JEST_JUNIT_OUTPUT_DIR: test-results/jest
+      JEST_JUNIT_OUTPUT_NAME: junit.xml
 
   - task: PublishTestResults@2
     condition: succeededOrFailed()
-    displayName: 'Publish Test Results'
+    displayName: 'Publish JUnit results'
     inputs:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'test-results/jest/junit.xml'
