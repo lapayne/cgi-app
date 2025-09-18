@@ -1,5 +1,12 @@
 trigger:
-  - main
+  branches:
+    include:
+      - '*'   # build on all branches (incl. main)
+
+pr:
+  branches:
+    include:
+      - '*'   # validate PRs from any branch
 
 pool:
   vmImage: ubuntu-latest
@@ -10,16 +17,15 @@ steps:
       versionSpec: '20.x'
     displayName: 'Install Node.js'
 
-  - script: npm i
+  - script: npm ci
     displayName: 'Install dependencies'
 
-  # Run CRA tests; pass JUnit reporter; jsdom is automatic in CRA
+  # Run CRA tests; jsdom is built-in. Always publish results, even on failure.
   - script: |
       CI=true npm test -- --watchAll=false --ci \
         --reporters=default --reporters=jest-junit
     displayName: 'Run tests (CRA + JUnit)'
     env:
-      # jest-junit output location
       JEST_JUNIT_OUTPUT_DIR: test-results/jest
       JEST_JUNIT_OUTPUT_NAME: junit.xml
 
@@ -30,3 +36,17 @@ steps:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'test-results/jest/junit.xml'
       mergeTestResults: true
+
+  # Only build if tests passed
+  - script: npm run build
+    displayName: 'Build app'
+    condition: succeeded()
+
+  # Publish CRA build output as artifact for Release pipelines
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish build artifact'
+    condition: succeeded()
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)/build'
+      ArtifactName: 'drop-$(Build.SourceBranchName)'
+      publishLocation: 'Container'
