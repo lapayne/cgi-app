@@ -24,9 +24,9 @@ steps:
   - script: npm install --save-dev @babel/core @babel/preset-react
     displayName: "Install Babel"
 
-  - script: |
+  - script: | 
       echo '{"presets": ["@babel/preset-react"]}' > .babelrc
-      displayName: 'Configure Babel'
+    displayName: 'Configure Babel'
 
   - script: npx jest --ci --reporters=default --reporters=jest-junit
     displayName: "Run Tests with JUnit Reporter"
