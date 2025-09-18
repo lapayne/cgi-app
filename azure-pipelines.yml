@@ -22,7 +22,7 @@ steps:
 
   # Run CRA tests; jsdom is built-in. Always publish results, even on failure.
   - script: |
-      CI=true npm test -- --watchAll=false --ci \
+      CI=true npm test -- --watchAll=false --i \
         --reporters=default --reporters=jest-junit
     displayName: 'Run tests (CRA + JUnit)'
     env:
