@@ -11,7 +11,7 @@ on:
       - "*"
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,13 +26,6 @@ jobs:
 
       - name: Install dependencies
         run: npm i
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Run tests (CRA + JUnit)
         run: |
@@ -50,7 +43,7 @@ jobs:
           path: test-results/jest/junit.xml
 
   build_and_push_docker:
-    needs: test
+    needs: build_and_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
