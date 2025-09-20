@@ -110,15 +110,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
-        id: build-image
-        run: |
-          IMAGE_ID=ghcr.io/${{ github.repository }}/cgi-app
-          IMAGE_TAG=sha-${{ github.sha }}
-
-          docker build . --tag $IMAGE_ID:$IMAGE_TAG
-          docker push $IMAGE_ID:$IMAGE_TAG
-
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
