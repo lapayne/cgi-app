@@ -94,7 +94,7 @@ jobs:
 
       - uses: "google-github-actions/auth@v3"
         with:
-          workload_identity_provider: "projects/905889118729/locations/global/workloadIdentityPools/gha-cgi/providers/gha-cgi"
+          workload_identity_provider: "projects/905889118729/locations/global/workloadIdentityPools/github/providers/my-repoi"
           service_account: "905889118729-compute@developer.gserviceaccount.com"
 
       - id: "deploy"
@@ -102,6 +102,6 @@ jobs:
         with:
           service: "cgi-ado-dev"
           image: "ghcr.io/${{ github.repository }}:sha-${{ github.sha }}"
-
+          region: "europe-west2"
       - name: "Use output"
         run: 'curl "${{ steps.deploy.outputs.url }}"'
