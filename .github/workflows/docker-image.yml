@@ -134,7 +134,7 @@ jobs:
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
-          service: "cgi-ado-dev"
+          service: "cgi-app-dev"
           image: europe-west2-docker.pkg.dev/cgi-ado/github-mirror/lapayne/cgi-app:sha-${{ github.sha }}
           region: "europe-west2"
           env_vars_update_strategy: "replace"
