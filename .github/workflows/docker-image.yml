@@ -138,3 +138,36 @@ jobs:
           image: europe-west2-docker.pkg.dev/cgi-ado/github-mirror/lapayne/cgi-app:sha-${{ github.sha }}
           region: "europe-west2"
           env_vars_update_strategy: "replace"
+
+  run_e2e_tests:
+    needs: deploy_to_dev
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout Terraform repository
+      uses: actions/checkout@v4
+      with:
+        repository: lapayne/cgi-test
+        path: playwright
+        token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
+
+    - name: Use Node.js 20.x
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20.x"
+
+    - name: Install dependencies
+      run: npm i
+      working-directory: ./playwright
+
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      working-directory: ./playwright
+
+    - name: Run E2E tests
+      run: npx playwright test
+      working-directory: ./playwright
+      env:
+        SITE_URL: ${{ needs.deploy_to_dev.outputs.url }}
