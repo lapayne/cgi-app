@@ -114,6 +114,6 @@ jobs:
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: "cgi-ado-dev"
-          image: ghcr.io/${{ github.repository }}/cgi-app:sha-${{ github.sha }}
+          image: europe-west2-docker.pkg.dev/cgi-ado/github-mirror/lapayne/cgi-app:sha-${{ github.sha }}
           region: "europe-west2"
           env_vars_update_strategy: "replace"
