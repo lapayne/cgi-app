@@ -92,6 +92,7 @@ jobs:
         with:
           repository: lapayne/cgi-tf
           path: terraform
+          token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
 
       - name: "Authenticate to Google Cloud"
         uses: "google-github-actions/auth@v2"
