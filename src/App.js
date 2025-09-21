@@ -22,6 +22,7 @@ const App = () => {
           <p
             className="text-5xl font-extrabold text-blue-600"
             data-testid="count-display"
+            name="count-display"
           >
             {count}
           </p>
