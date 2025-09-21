@@ -170,4 +170,4 @@ jobs:
       run: npx playwright test
       working-directory: ./playwright
       env:
-        SITE_URL: ${{ needs.deploy_to_dev.outputs.url }}
+        ENVIRONMENT: dev
