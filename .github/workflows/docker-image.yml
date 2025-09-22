@@ -43,6 +43,27 @@ jobs:
           name: test-results
           path: test-results/jest/junit.xml
 
+  sonarqube_scan:
+    needs: unit_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Disabling shallow clones is recommended for improving the relevancy of analysis
+          fetch-depth: 0
+
+      - name: SonarQube Scan
+        uses: sonarsource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+      
+        with:
+          projectBaseDir: .  # The directory to scan. Use "." for the root.
+          args: >
+            -Dsonar.projectKey=cgi-app
+            -Dsonar.sources=.
+
   build_and_push_docker:
     needs: unit_test
     runs-on: ubuntu-latest
