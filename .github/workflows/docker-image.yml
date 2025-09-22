@@ -72,6 +72,8 @@ jobs:
         with:
           pollingTimeoutSec: 600
           sonar_project_key: lapayne_cgi-app
+          sonar_host_url: https://sonarcloud.io
+          sonar_organization: lapayne
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
     
@@ -79,7 +81,7 @@ jobs:
       - name: Fail build on quality gate failure
         if: ${{ steps.quality-gate.outputs.qualityGateStatus != 'OK' }}
         run: |
-          echo "The SonarQube quality gate failed.${{ steps.quality-gate.outputs.qualityGateStatus }}"
+          echo "The SonarQube quality gate failed. ${{ steps.quality-gate.outputs.qualityGateStatus }}"
           exit 1
 
   build_and_push_docker:
