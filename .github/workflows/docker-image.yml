@@ -82,7 +82,7 @@ jobs:
           exit 1
 
   build_and_push_docker:
-    needs: [unit_test, sonarqube_scan]
+    needs: unit_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -119,7 +119,7 @@ jobs:
             ghcr.io/${{ github.repository }}:dev
 
   deploy_to_dev:
-    needs: build_and_push_docker
+    needs: [build_and_push_docker, sonarqube_scan]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
