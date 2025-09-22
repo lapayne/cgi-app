@@ -79,7 +79,7 @@ jobs:
     
       # New Step: Fail the build if the quality gate is not 'OK'
       - name: Fail build on quality gate failure
-        if: ${{ steps.quality-gate.outputs.quality-gate-status != 'OK' }}
+        if: ${{ steps.quality-gate.outputs.quality-gate-status != 'PASSED' }}
         run: |
           echo "The Quality Gate status is ${{ steps.quality-gate.outputs.quality-gate-status }}""
           exit 1
