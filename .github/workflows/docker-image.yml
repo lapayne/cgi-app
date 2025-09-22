@@ -25,7 +25,7 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:beta
-          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+          docker run  -e SITE_URL=www.lapayne.com ghcr.io/lapayne/cgi-test:latest
 
   unit_test:
     runs-on: ubuntu-latest
