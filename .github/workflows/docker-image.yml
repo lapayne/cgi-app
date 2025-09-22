@@ -78,7 +78,7 @@ jobs:
       - name: Fail build on quality gate failure
         if: ${{ steps.quality-gate.outputs.qualityGateStatus != 'OK' }}
         run: |
-          echo "The SonarQube quality gate failed."
+          echo "The SonarQube quality gate failed.${{ steps.quality-gate.outputs.qualityGateStatus }}"
           exit 1
 
   build_and_push_docker:
