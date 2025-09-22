@@ -162,12 +162,17 @@ jobs:
   run_e2e_tests:
     needs: deploy_to_dev
     runs-on: ubuntu-latest
-
-    # This is the key change: We define the container to use for this job.
-    container: ghcr.io/lapayne/cgi-test:beta
-    
     steps:
-      - name: Run Playwright tests
-        run: npx playwright test
- 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Pull and run container
+        run: |
+          docker pull ghcr.io/lapayne/cgi-test:beta
+          docker run --rm -v ${{ github.workspace }}:/app ghcr.io/lapayne/cgi-test:beta /bin/sh -c "npm ci && npx playwright test"
+
 
