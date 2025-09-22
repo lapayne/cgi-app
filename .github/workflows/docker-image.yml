@@ -11,19 +11,22 @@ on:
       - "*"
 
 jobs:
-  build_and_test:
+  unit_test:
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Use Node.js 20.x
         uses: actions/setup-node@v4
         with:
           node-version: "20.x"
 
+      - name: Debug - Print from vars
+        run: echo "From vars: ${{ vars.SITE_URL }}"
       - name: Install dependencies
         run: npm i
 
@@ -43,7 +46,7 @@ jobs:
           path: test-results/jest/junit.xml
 
   build_and_push_docker:
-    needs: build_and_test
+    needs: unit_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
