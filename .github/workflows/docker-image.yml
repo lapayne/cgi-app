@@ -26,7 +26,8 @@ jobs:
           node-version: "20.x"
 
       - name: Debug - Print from vars
-        run: echo "From vars: ${{ vars.SITE_URL }}"
+        run: | 
+          echo "From vars: ${{ vars.SITE_URL }}"
       - name: Install dependencies
         run: npm i
 
