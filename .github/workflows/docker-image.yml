@@ -192,6 +192,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: tag container for uat
         run: |
+          docker pull ghcr.io/${{ github.repository }}:dev
           docker tag ghcr.io/${{ github.repository }}:dev ghcr.io/${{ github.repository }}:uat
       - name: push container for uat
         run: |
