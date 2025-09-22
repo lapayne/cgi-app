@@ -71,6 +71,7 @@ jobs:
         uses: sonarsource/sonarqube-quality-gate-action@master
         with:
           pollingTimeoutSec: 600
+          sonar_project_key: lapayne_cgi-app
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
     
