@@ -169,7 +169,10 @@ jobs:
       working-directory: ./playwright
 
     - name: Run E2E tests
-      run: npx playwright test
+      run: |
+          echo "Debugging: The SITE_URL is ${{ vars.SITE_URL }}"
+          export SITE_URL="${{ vars.SITE_URL }}"
+          npx playwright test
       working-directory: ./playwright
  
 
