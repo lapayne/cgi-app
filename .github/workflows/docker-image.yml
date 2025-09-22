@@ -173,6 +173,6 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:beta
-          docker run --rm -v ${{ github.workspace }}:/app ghcr.io/lapayne/cgi-test:beta /bin/sh -c "npm ci && npx playwright test"
+          docker run --rm -v ${{ github.workspace }}:/app ghcr.io/lapayne/cgi-test:beta /bin/sh -c "npx playwright test"
 
 
