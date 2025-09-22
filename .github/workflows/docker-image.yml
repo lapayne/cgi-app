@@ -57,6 +57,12 @@ jobs:
         uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+        with:
+        # Add the 'args' property to provide the necessary parameters
+          args: >
+            -Dsonar.projectKey=lapayne_cgi-app
+            -Dsonar.sources=./src
+            -Dsonar.organization=lapayne
 
   build_and_push_docker:
     needs: unit_test
