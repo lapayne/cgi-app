@@ -162,36 +162,12 @@ jobs:
   run_e2e_tests:
     needs: deploy_to_dev
     runs-on: ubuntu-latest
-    environment: dev
-    permissions:
-      contents: read
+
+    # This is the key change: We define the container to use for this job.
+    container: ghcr.io/lapayne/cgi-test:beta
+    
     steps:
-    - name: Checkout Terraform repository
-      uses: actions/checkout@v4
-      with:
-        repository: lapayne/cgi-test
-        path: playwright
-        token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
-
-    - name: Use Node.js 20.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: "20.x"
-
-    - name: Install dependencies
-      run: npm i
-      working-directory: ./playwright
-
-
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
-      working-directory: ./playwright
-
-    - name: Run E2E tests
-      run: |
-          echo "Debugging: The SITE_URL is ${{ vars.SITE_URL }}"
-          export SITE_URL="${{ vars.SITE_URL }}"
-          npx playwright test
-      working-directory: ./playwright
+      - name: Run Playwright tests
+        run: npx playwright test
  
 
