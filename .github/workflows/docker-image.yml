@@ -171,4 +171,4 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:beta
-          docker run  ghcr.io/lapayne/cgi-test:beta -e SITE_URL=${{ vars.SITE_URL }}
+          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:beta
