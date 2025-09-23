@@ -324,7 +324,7 @@ jobs:
 
   run_prod_e2e_tests:
     name: Run Prod E2E Tests
-    needs: deploy_to_uat
+    needs: deploy_to_prod
     runs-on: ubuntu-latest
     environment: prod
     steps:
