@@ -358,7 +358,7 @@ jobs:
   revert_on_dev_e2e_failure:
      name: Revert on Dev E2E Failure
      needs: run_dev_e2e_tests
-     if: ${{ needs.run_dev_e2e_tests.result == 'failure' }}
+     if: ${{ needs.run_dev_e2e_tests.result == 'failed' }}
      runs-on: ubuntu-latest
      permissions:
       contents: read
@@ -408,7 +408,7 @@ jobs:
   revert_on_uat_e2e_failure:
      name: Revert on UAT E2E Failure
      needs: run_uat_e2e_tests
-     if: ${{ needs.run_uat_e2e_tests.result == 'failure' }}
+     if: ${{ needs.run_uat_e2e_tests.result == 'failed' }}
      runs-on: ubuntu-latest
      permissions:
       contents: read
@@ -458,7 +458,7 @@ jobs:
   revert_on_prod_e2e_failure:
     name: Revert on Prod E2E Failure
     needs: run_prod_e2e_tests
-    if: ${{ needs.run_prod_e2e_tests.result == 'failure' }}
+    if: ${{ needs.run_prod_e2e_tests.result == 'failed' }}
     runs-on: ubuntu-latest
     permissions:
      contents: read
