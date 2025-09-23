@@ -176,7 +176,7 @@ jobs:
 
       - name: Pull and run container
         run: |
-          docker pull ghcr.io/lapayne/cgi-test:beta
+          docker pull ghcr.io/lapayne/cgi-test:latest
           docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
 
   retag_docker_image_uat:
@@ -256,5 +256,5 @@ jobs:
 
       - name: Pull and run container
         run: |
-          docker pull ghcr.io/lapayne/cgi-test:beta
+          docker pull ghcr.io/lapayne/cgi-test:latest
           docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
