@@ -285,7 +285,7 @@ jobs:
     name: Deploy to Prod environment
     needs: retag_docker_image_prod
     runs-on: ubuntu-latest
-    encironment: prod
+    environment: prod
     permissions:
       id-token: write
       contents: read
