@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Deploy Critical prod App
 
 on:
   push:
@@ -84,7 +84,7 @@ jobs:
           exit 1
 
   build_and_push_docker:
-    name: Build and Push Docker Image (Dev)
+    name: Create Docker Image
     needs: unit_test
     runs-on: ubuntu-latest
     permissions:
@@ -279,7 +279,7 @@ jobs:
           docker tag ghcr.io/${{ github.repository }}:uat ghcr.io/${{ github.repository }}:prod
       - name: push container for uat
         run: |
-          docker push ghcr.io/${{ github.repository }}:uat
+          docker push ghcr.io/${{ github.repository }}:prod
 
   deploy_to_prod:
     name: Deploy to Prod environment
