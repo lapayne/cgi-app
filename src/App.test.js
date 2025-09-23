@@ -27,7 +27,7 @@ describe("App Component Tests", () => {
     // Renders the App component to a virtual DOM environment.
     render(<App />);
     // Asserts that the "React App with Tests" heading is present in the document.
-    expect(screen.getByText(/React App with Tests/i)).toBeInTheDocument();
+    expect(screen.getByText(/Critical Corporate App/i)).toBeInTheDocument();
   });
 
   /**

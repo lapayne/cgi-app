@@ -1,4 +1,4 @@
-name: Node.js CI
+name: Deploy Critical prod App
 
 on:
   push:
@@ -84,7 +84,7 @@ jobs:
           exit 1
 
   build_and_push_docker:
-    name: Build and Push Docker Image (Dev)
+    name: Create Docker Image
     needs: unit_test
     runs-on: ubuntu-latest
     permissions:
@@ -109,7 +109,12 @@ jobs:
         id: get_tag
         run: echo "IMAGE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         if: startsWith(github.ref, 'refs/tags/')
-
+      - name: tag container for old dev
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:dev
+          docker tag ghcr.io/${{ github.repository }}:dev ghcr.io/${{ github.repository }}:devold
+          docker push ghcr.io/${{ github.repository }}:devold
+      
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
@@ -196,10 +201,13 @@ jobs:
       - name: tag container for uat
         run: |
           docker pull ghcr.io/${{ github.repository }}:dev
+          docker pull ghcr.io/${{ github.repository }}:uat
+          docker tag ghcr.io/${{ github.repository }}:uat ghcr.io/${{ github.repository }}:uatold
           docker tag ghcr.io/${{ github.repository }}:dev ghcr.io/${{ github.repository }}:uat
       - name: push container for uat
         run: |
           docker push ghcr.io/${{ github.repository }}:uat
+          docker push ghcr.io/${{ github.repository }}:uatold
 
   deploy_to_uat:
     name: Deploy to UAT environment
@@ -258,3 +266,236 @@ jobs:
         run: |
           docker pull ghcr.io/lapayne/cgi-test:latest
           docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+
+  retag_docker_image_prod:
+    name: Retag Docker Image for Prod
+    needs: run_uat_e2e_tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: tag container for prod
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:uat
+          docker pull ghcr.io/${{ github.repository }}:prod
+          docker tag ghcr.io/${{ github.repository }}:prod ghcr.io/${{ github.repository }}:prodold
+          docker tag ghcr.io/${{ github.repository }}:uat ghcr.io/${{ github.repository }}:prod
+      - name: push container for uat
+        run: |
+          docker push ghcr.io/${{ github.repository }}:prod
+          docker push ghcr.io/${{ github.repository }}:prodold
+
+  deploy_to_prod:
+    name: Deploy to Prod environment
+    needs: retag_docker_image_prod
+    runs-on: ubuntu-latest
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Checkout Terraform repository
+        uses: actions/checkout@v4
+        with:
+          repository: lapayne/cgi-tf
+          path: terraform
+          token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
+
+      - name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v1"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.3"
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend-config="prefix=prod"
+        working-directory: ./terraform
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply --auto-approve --var-file=prod.tfvars
+        working-directory: ./terraform
+
+  run_prod_e2e_tests:
+    name: Run Prod E2E Tests
+    needs: deploy_to_prod
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and run container
+        run: |
+          docker pull ghcr.io/lapayne/cgi-test:beta
+          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+
+##################
+# Error states   #
+##################
+
+  revert_on_dev_e2e_failure:
+     name: Revert on Dev E2E Failure
+     needs: run_dev_e2e_tests
+     if: ${{ needs.run_dev_e2e_tests.result == 'failed' }}
+     runs-on: ubuntu-latest
+     permissions:
+      contents: read
+      packages: write
+     steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Retag dev container
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:devold
+          docker tag ghcr.io/${{ github.repository }}:devold ghcr.io/${{ github.repository }}:dev
+          docker push ghcr.io/${{ github.repository }}:dev
+      - name: Checkout Terraform repository
+        uses: actions/checkout@v4
+        with:
+          repository: lapayne/cgi-tf
+          path: terraform
+          token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
+
+      - name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v1"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.3"
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend-config="prefix=dev"
+        working-directory: ./terraform
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply --auto-approve --var-file=dev.tfvars
+        working-directory: ./terraform
+        
+  revert_on_uat_e2e_failure:
+     name: Revert on UAT E2E Failure
+     needs: run_uat_e2e_tests
+     if: ${{ needs.run_uat_e2e_tests.result == 'failed' }}
+     runs-on: ubuntu-latest
+     permissions:
+      contents: read
+      packages: write
+     steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Retag uat container
+        run: |
+          docker pull ghcr.io/${{ github.repository }}:uatold
+          docker tag ghcr.io/${{ github.repository }}:uatold ghcr.io/${{ github.repository }}:uat
+          docker push ghcr.io/${{ github.repository }}:uat
+      - name: Checkout Terraform repository
+        uses: actions/checkout@v4
+        with:
+          repository: lapayne/cgi-tf
+          path: terraform
+          token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
+
+      - name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v1"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.13.3"
+
+      - name: Terraform Init
+        id: init
+        run: terraform init -backend-config="prefix=uat"
+        working-directory: ./terraform
+
+      - name: Terraform Apply
+        id: apply
+        run: terraform apply --auto-approve --var-file=uat.tfvars
+        working-directory: ./terraform
+    
+  revert_on_prod_e2e_failure:
+    name: Revert on Prod E2E Failure
+    needs: run_prod_e2e_tests
+    if: ${{ needs.run_prod_e2e_tests.result == 'failed' }}
+    runs-on: ubuntu-latest
+    permissions:
+     contents: read
+     packages: write
+    steps:
+     - name: Login to GHCR
+       uses: docker/login-action@v3
+       with:
+         registry: ghcr.io
+         username: ${{ github.actor }}
+         password: ${{ secrets.GITHUB_TOKEN }}
+     - name: Retag prod container
+       run: |
+         docker pull ghcr.io/${{ github.repository }}:prodold
+         docker tag ghcr.io/${{ github.repository }}:prodold ghcr.io/${{ github.repository }}:prod
+         docker push ghcr.io/${{ github.repository }}:prod
+     - name: Checkout Terraform repository
+       uses: actions/checkout@v4
+       with:
+         repository: lapayne/cgi-tf
+         path: terraform
+         token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
+     - name: "Authenticate to Google Cloud"
+       uses: "google-github-actions/auth@v2"
+       with:
+         credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+     - name: "Set up Cloud SDK"
+       uses: "google-github-actions/setup-gcloud@v1"
+     - name: Setup Terraform
+       uses: hashicorp/setup-terraform@v3
+       with:
+         terraform_version: "1.13.3"
+     - name: Terraform Init
+       id: init
+       run: terraform init -backend-config="prefix=prod"
+       working-directory: ./terraform
+     - name: Terraform Apply
+       id: apply
+       run: terraform apply --auto-approve --var-file=prod.tfvars
+       working-directory: ./terraform
