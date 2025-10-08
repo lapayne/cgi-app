@@ -82,7 +82,8 @@ jobs:
     needs: unit_test
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      security-events: write
     steps:
       - name: Run Trivy vulnerability scanner in repo mode
         uses: aquasecurity/trivy-action@0.28.0
