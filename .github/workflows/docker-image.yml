@@ -52,7 +52,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Disabling shallow clones is recommended for improving the relevancy of analysis
           fetch-depth: 0
 
       - name: sonarqube_scan
@@ -60,23 +59,19 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
         with:
-          # Add the 'args' property to provide the necessary parameters
           args: >
             -Dsonar.projectKey=lapayne_cgi-app
             -Dsonar.sources=./src
             -Dsonar.organization=lapayne
 
-      # Check the Quality Gate status.
       - name: SonarQube Quality Gate check
         id: quality-gate
         uses: sonarsource/sonarqube-quality-gate-action@master
         with:
           pollingTimeoutSec: 600
-
         env:
           SONAR_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
 
-      # New Step: Fail the build if the quality gate is not 'OK'
       - name: Fail build on quality gate failure
         if: ${{ steps.quality-gate.outputs.quality-gate-status != 'PASSED' }}
         run: |
@@ -109,12 +104,13 @@ jobs:
         id: get_tag
         run: echo "IMAGE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         if: startsWith(github.ref, 'refs/tags/')
+
       - name: tag container for old dev
         run: |
           docker pull ghcr.io/${{ github.repository }}:dev
           docker tag ghcr.io/${{ github.repository }}:dev ghcr.io/${{ github.repository }}:devold
           docker push ghcr.io/${{ github.repository }}:devold
-      
+
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
@@ -136,6 +132,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Checkout Terraform repository
         uses: actions/checkout@v4
         with:
@@ -143,13 +140,13 @@ jobs:
           path: terraform
           token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
 
-      - name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v1"
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -163,7 +160,11 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply --auto-approve --var-file=dev.tfvars
+        run: >
+          terraform apply --auto-approve
+          --var-file=dev.tfvars
+          -var="image_repo=ghcr.io/${{ github.repository }}"
+          -var="image_tag=sha-${{ github.sha }}"
         working-directory: ./terraform
 
   run_dev_e2e_tests:
@@ -182,7 +183,7 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:latest
-          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+          docker run -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
 
   retag_docker_image_uat:
     name: Retag Docker Image for UAT
@@ -198,12 +199,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: tag container for uat
         run: |
           docker pull ghcr.io/${{ github.repository }}:dev
           docker pull ghcr.io/${{ github.repository }}:uat
           docker tag ghcr.io/${{ github.repository }}:uat ghcr.io/${{ github.repository }}:uatold
           docker tag ghcr.io/${{ github.repository }}:dev ghcr.io/${{ github.repository }}:uat
+
       - name: push container for uat
         run: |
           docker push ghcr.io/${{ github.repository }}:uat
@@ -219,6 +222,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Checkout Terraform repository
         uses: actions/checkout@v4
         with:
@@ -226,13 +230,13 @@ jobs:
           path: terraform
           token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
 
-      - name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v1"
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -246,7 +250,11 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply --auto-approve --var-file=uat.tfvars
+        run: >
+          terraform apply --auto-approve
+          --var-file=uat.tfvars
+          -var="image_repo=ghcr.io/${{ github.repository }}"
+          -var="image_tag=sha-${{ github.sha }}"
         working-directory: ./terraform
 
   run_uat_e2e_tests:
@@ -265,7 +273,7 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:latest
-          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+          docker run -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
 
   retag_docker_image_prod:
     name: Retag Docker Image for Prod
@@ -281,12 +289,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: tag container for prod
         run: |
           docker pull ghcr.io/${{ github.repository }}:uat
           docker pull ghcr.io/${{ github.repository }}:prod
           docker tag ghcr.io/${{ github.repository }}:prod ghcr.io/${{ github.repository }}:prodold
           docker tag ghcr.io/${{ github.repository }}:uat ghcr.io/${{ github.repository }}:prod
+
       - name: push container for uat
         run: |
           docker push ghcr.io/${{ github.repository }}:prod
@@ -303,6 +313,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Checkout Terraform repository
         uses: actions/checkout@v4
         with:
@@ -310,13 +321,13 @@ jobs:
           path: terraform
           token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
 
-      - name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
 
-      - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v1"
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -330,7 +341,11 @@ jobs:
 
       - name: Terraform Apply
         id: apply
-        run: terraform apply --auto-approve --var-file=prod.tfvars
+        run: >
+          terraform apply --auto-approve
+          --var-file=prod.tfvars
+          -var="image_repo=ghcr.io/${{ github.repository }}"
+          -var="image_tag=sha-${{ github.sha }}"
         working-directory: ./terraform
 
   run_prod_e2e_tests:
@@ -349,7 +364,7 @@ jobs:
       - name: Pull and run container
         run: |
           docker pull ghcr.io/lapayne/cgi-test:beta
-          docker run  -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
+          docker run -e SITE_URL=${{ vars.SITE_URL }} ghcr.io/lapayne/cgi-test:latest
 
 ##################
 # Error states   #
@@ -381,25 +396,20 @@ jobs:
           repository: lapayne/cgi-tf
           path: terraform
           token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
-
-      - name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
-
-      - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v1"
-
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.3"
-
       - name: Terraform Init
         id: init
         run: terraform init -backend-config="prefix=dev"
         working-directory: ./terraform
-
       - name: Terraform Apply
         id: apply
         run: terraform apply --auto-approve --var-file=dev.tfvars
@@ -431,25 +441,20 @@ jobs:
           repository: lapayne/cgi-tf
           path: terraform
           token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
-
-      - name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
-
-      - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v1"
-
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "1.13.3"
-
       - name: Terraform Init
         id: init
         run: terraform init -backend-config="prefix=uat"
         working-directory: ./terraform
-
       - name: Terraform Apply
         id: apply
         run: terraform apply --auto-approve --var-file=uat.tfvars
@@ -481,12 +486,12 @@ jobs:
          repository: lapayne/cgi-tf
          path: terraform
          token: ${{ secrets.PAT_FOR_TERRAFORM_REPO }}
-     - name: "Authenticate to Google Cloud"
-       uses: "google-github-actions/auth@v2"
+     - name: Authenticate to Google Cloud
+       uses: google-github-actions/auth@v2
        with:
-         credentials_json: "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}"
-     - name: "Set up Cloud SDK"
-       uses: "google-github-actions/setup-gcloud@v1"
+         credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+     - name: Set up Cloud SDK
+       uses: google-github-actions/setup-gcloud@v1
      - name: Setup Terraform
        uses: hashicorp/setup-terraform@v3
        with:
